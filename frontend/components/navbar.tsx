@@ -1,40 +1,99 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Dna } from "lucide-react"
+import React from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Dna } from 'lucide-react';
+import { cn, buttons, animations } from '@/lib/utils';
 
 export function Navbar() {
+  const containerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Dna className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold text-foreground">
-              GeneScope<span className="text-primary">AI</span>
-            </span>
+    <motion.nav
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50",
+        "bg-gradient-to-r from-background/95 via-card/90 to-background/95",
+        "backdrop-blur-xl border-b border-border/50",
+        "shadow-lg shadow-black/10"
+      )}
+    >
+      <div className="container-max">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className={cn(
+                "absolute inset-0 rounded-lg blur opacity-75 group-hover:opacity-100 transition-opacity duration-300",
+                "bg-gradient-to-r from-primary to-accent"
+              )} />
+              <div className={cn(
+                "relative px-3 py-2 bg-card/80 rounded-lg flex items-center gap-2",
+                "border border-border/50 backdrop-blur-sm"
+              )}>
+                <Dna className="w-5 h-5 text-accent animate-pulse-glow" />
+                <span className="font-bold text-lg text-foreground">
+                  GeneScope AI
+                </span>
+              </div>
+            </div>
           </Link>
 
-          <div className="hidden sm:flex items-center gap-6">
-            <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          {/* Navigation Links */}
+          <div className="hidden sm:flex items-center gap-8">
+            <button
+              onClick={() => scrollToSection('features')}
+              className={cn(
+                "text-sm font-medium transition-colors duration-200",
+                "text-muted-foreground hover:text-accent",
+                "relative group"
+              )}
+            >
               Features
-            </Link>
-            <Link href="#workflow" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              How it Works
-            </Link>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all duration-200 group-hover:w-full" />
+            </button>
+
+            <button
+              onClick={() => scrollToSection('workflow')}
+              className={cn(
+                "text-sm font-medium transition-colors duration-200",
+                "text-muted-foreground hover:text-accent",
+                "relative group"
+              )}
+            >
+              How It Works
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all duration-200 group-hover:w-full" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-muted-foreground">
-              Sign In
-            </Button>
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Get Started
-            </Button>
-          </div>
+          {/* CTA Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => scrollToSection('upload')}
+            className={buttons.primary}
+          >
+            Get Started
+          </motion.button>
         </div>
       </div>
-    </nav>
-  )
+    </motion.nav>
+  );
 }
