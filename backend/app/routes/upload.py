@@ -1,18 +1,20 @@
+from app.services.medical_ai import generate_medical_insights
 from fastapi import APIRouter, UploadFile, File
 import os
+
 from app.services.analyzer import analyze_genomic_data
+from app.services.insight_generator import generate_insights
 
 router = APIRouter()
 
 UPLOAD_FOLDER = "app/datasets"
 
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
 
-    # Create folder if not exists
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    # Check extension
     allowed_extensions = [".csv", ".vcf"]
 
     file_extension = os.path.splitext(file.filename)[1].lower()
@@ -23,18 +25,21 @@ async def upload_file(file: UploadFile = File(...)):
             "message": "Only CSV and VCF files are allowed"
         }
 
-    # Save file
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
     with open(file_path, "wb") as buffer:
         content = await file.read()
         buffer.write(content)
 
-    # Analyze file
+    # Genomic analysis
     analysis_result = analyze_genomic_data(file_path)
+
+    # AI insights
+    insight_result = generate_insights(analysis_result)
 
     return {
         "status": "success",
         "filename": file.filename,
-        "analysis": analysis_result
+        "dataset_summary": analysis_result,
+        "ai_insights": insight_result["insights"]
     }
