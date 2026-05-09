@@ -1,14 +1,9 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-import { COLORS } from '@/lib/constants'
-
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'GeneScope AI - AI-Powered Genomic Mutation Analysis',
+  title: 'GScope AI - AI-Powered Genomic Mutation Analysis',
   description: 'Advanced AI platform for analyzing genomic datasets and identifying mutations with unprecedented accuracy.',
   generator: 'v0.app',
   icons: {
@@ -39,26 +34,21 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <style>{`
-          :root {
-            --background: ${COLORS.background};
-            --card-bg: ${COLORS.cardBg};
-            --primary: ${COLORS.primary};
-            --accent: ${COLORS.accent};
-            --secondary: ${COLORS.secondary};
-            --text: ${COLORS.text};
-            --muted: ${COLORS.muted};
-          }
           * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
           }
           html {
+            background: #0B1020;
+          }
+          html {
             scroll-behavior: smooth;
           }
           body {
-            background-color: ${COLORS.background};
-            color: ${COLORS.text};
+            min-height: 100vh;
+            background-color: #0B1020;
+            color: #E5E7EB;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
               'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
               sans-serif;

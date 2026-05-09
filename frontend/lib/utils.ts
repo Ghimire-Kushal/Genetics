@@ -75,7 +75,7 @@ export const buttons = {
   ghostPrimary: 'bg-transparent border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors px-4 py-2 rounded-lg',
 
   // Link buttons
-  link: 'text-primary hover:text-primary-hover underline-offset-4 hover:underline transition-colors',
+  link: 'text-primary hover:text-cyan-400 underline-offset-4 hover:underline transition-colors',
 } as const
 
 /**

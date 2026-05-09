@@ -503,7 +503,7 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }: {
             exit={{ opacity: 0 }}
             className="font-bold tracking-tight text-white text-sm whitespace-nowrap"
           >
-            GeneScope <span className="text-cyan-400">AI</span>
+            GScope <span className="text-cyan-400">AI</span>
           </motion.span>
         )}
         <button

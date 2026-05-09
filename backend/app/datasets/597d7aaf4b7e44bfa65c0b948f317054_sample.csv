@@ -1,0 +1,4 @@
+gene,mutation,score
+BRCA1,Positive,90
+TP53,Negative,40
+EGFR,Positive,80

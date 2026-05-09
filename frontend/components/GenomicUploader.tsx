@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import axios, { AxiosProgressEvent } from "axios";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, FileText, ShieldCheck, UploadCloud, XCircle } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,10 @@ interface UploadState {
 interface GenomicUploaderProps {
   /** POST endpoint that accepts multipart/form-data with field name "file" */
   apiEndpoint?: string;
+  /** POST endpoint that starts or confirms backend analysis */
+  analyzeEndpoint?: string;
+  /** GET endpoint that returns analysis results by analysis_id */
+  resultsEndpoint?: string;
   /** Redirect path after successful upload */
   redirectPath?: string;
   /** Extra form data to attach to the upload */
@@ -35,7 +40,6 @@ interface GenomicUploaderProps {
 
 const ACCEPTED_TYPES: Record<string, string[]> = {
   "text/csv": [".csv"],
-  "text/plain": [".txt"],
   "text/x-vcard": [".vcf"],
   "application/octet-stream": [".vcf"],
 };
@@ -49,6 +53,12 @@ const ANALYSIS_MESSAGES = [
   "Mapping chromosomal positions...",
   "Calculating allele frequencies...",
   "Finalizing biomarker analysis...",
+];
+
+const VALIDATION_RULES = [
+  "CSV or VCF genomic dataset",
+  "Maximum file size 50 MB",
+  "Single file upload",
 ];
 
 function formatBytes(bytes: number): string {
@@ -172,10 +182,10 @@ function SequenceScanner({ progress }: { progress: number }) {
 function AnalysisPhase() {
   const [msgIdx, setMsgIdx] = useState(0);
 
-  useState(() => {
+  useEffect(() => {
     const iv = setInterval(() => setMsgIdx((i) => (i + 1) % ANALYSIS_MESSAGES.length), 1800);
     return () => clearInterval(iv);
-  });
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -200,11 +210,37 @@ function AnalysisPhase() {
   );
 }
 
+function ValidationChecklist({ invalid }: { invalid: boolean }) {
+  return (
+    <div className="mt-5 grid gap-2 sm:grid-cols-3">
+      {VALIDATION_RULES.map((rule) => (
+        <div
+          key={rule}
+          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+            invalid
+              ? "border-red-400/20 bg-red-500/[0.06] text-red-200/80"
+              : "border-white/10 bg-white/[0.035] text-white/50"
+          }`}
+        >
+          {invalid ? (
+            <XCircle className="h-3.5 w-3.5 shrink-0 text-red-300" />
+          ) : (
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+          )}
+          <span>{rule}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function GenomicUploader({
-  apiEndpoint = "/api/upload",
-  redirectPath = "/dashboard",
+  apiEndpoint = "/api/genomics/upload",
+  analyzeEndpoint = "/api/genomics/analyze",
+  resultsEndpoint = "/api/genomics/results",
+  redirectPath = "/results",
   extraFields = {},
   onSuccess,
   onError,
@@ -222,9 +258,9 @@ export function GenomicUploader({
   // ── File validation ──────────────────────────────────────────────────────
   const validateFile = (file: File): string | null => {
     const ext = file.name.split(".").pop()?.toLowerCase();
-    const allowedExt = ["csv", "vcf", "txt"];
+    const allowedExt = ["csv", "vcf"];
     if (!ext || !allowedExt.includes(ext))
-      return `Unsupported format ".${ext}". Accepted: .csv, .vcf, .txt`;
+      return `Unsupported format ".${ext ?? "unknown"}". Accepted: .csv, .vcf`;
     if (file.size > MAX_SIZE_BYTES)
       return `File too large (${formatBytes(file.size)}). Max 50 MB.`;
     return null;
@@ -253,7 +289,7 @@ export function GenomicUploader({
       Object.entries(extraFields).forEach(([k, v]) => formData.append(k, v));
 
       try {
-        const response = await axios.post(apiEndpoint, formData, {
+        const uploadResponse = await axios.post(apiEndpoint, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           onUploadProgress: (e: AxiosProgressEvent) => {
             if (e.total) {
@@ -269,10 +305,37 @@ export function GenomicUploader({
         // Simulate brief analysis delay (replace with real polling if needed)
         await new Promise((res) => setTimeout(res, 3200));
 
+        const uploadResult = uploadResponse.data;
+        const analysisId = uploadResult.analysis_id ?? uploadResult.upload_id;
+
+        if (!analysisId) {
+          throw new Error("Backend response did not include an analysis id.");
+        }
+
+        const analyzeResponse = await axios.post(analyzeEndpoint, {
+          analysis_id: analysisId,
+          upload_id: uploadResult.upload_id ?? analysisId,
+        });
+
+        if (analyzeResponse.data?.status !== "completed") {
+          throw new Error("Analysis did not complete successfully.");
+        }
+
+        const resultsResponse = await axios.get(resultsEndpoint, {
+          params: { analysis_id: analysisId },
+        });
+
         setState((s) => ({ ...s, stage: "success" }));
-        onSuccess?.(response.data);
+        onSuccess?.(resultsResponse.data);
 
         await new Promise((res) => setTimeout(res, 1000));
+        const result = resultsResponse.data;
+        localStorage.setItem("genomicAnalysis", JSON.stringify(result));
+        if (result.summary) {
+          localStorage.setItem("genomicResult", JSON.stringify(result.summary));
+        } else {
+          localStorage.removeItem("genomicResult");
+        }
         router.push(redirectPath);
       } catch (err: unknown) {
         const msg =
@@ -283,7 +346,7 @@ export function GenomicUploader({
         onError?.(msg);
       }
     },
-    [apiEndpoint, redirectPath, extraFields, onSuccess, onError, router]
+    [apiEndpoint, analyzeEndpoint, resultsEndpoint, redirectPath, extraFields, onSuccess, onError, router]
   );
 
   // ── Dropzone ─────────────────────────────────────────────────────────────
@@ -294,8 +357,15 @@ export function GenomicUploader({
     disabled: state.stage !== "idle" && state.stage !== "error",
     onDropAccepted: ([file]) => handleUpload(file),
     onDropRejected: ([rej]) => {
-      const msg = rej.errors[0]?.message ?? "Invalid file.";
+      const firstError = rej.errors[0];
+      const msg =
+        firstError?.code === "file-invalid-type"
+          ? "Unsupported file type. Upload a .csv or .vcf genomic dataset."
+          : firstError?.code === "file-too-large"
+          ? "File is too large. Upload a dataset smaller than 50 MB."
+          : firstError?.message ?? "Invalid file.";
       setState((s) => ({ ...s, stage: "error", errorMessage: msg }));
+      onError?.(msg);
     },
   });
 
@@ -335,8 +405,7 @@ export function GenomicUploader({
             </h2>
             <p className="mt-1.5 text-sm text-white/40">
               Supported formats: <span className="text-cyan-400/80">.csv</span>,{" "}
-              <span className="text-cyan-400/80">.vcf</span>,{" "}
-              <span className="text-cyan-400/80">.txt</span> · Max 50 MB
+              <span className="text-cyan-400/80">.vcf</span> · Max 50 MB
             </p>
           </div>
 
@@ -352,7 +421,7 @@ export function GenomicUploader({
               >
                 <div
                   {...getRootProps()}
-                  className={`relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed px-8 py-14 cursor-pointer transition-colors duration-200 ${borderColor} bg-black/20`}
+                  className={`relative flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed px-8 py-14 cursor-pointer transition-colors duration-200 ${borderColor} bg-black/20`}
                 >
                   <input {...getInputProps()} />
 
@@ -368,24 +437,22 @@ export function GenomicUploader({
 
                   {/* Upload icon */}
                   <motion.div
-                    animate={isDragActive ? { scale: 1.15 } : { scale: 1 }}
+                    animate={isDragActive ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 300 }}
                     className="relative"
                   >
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-500/10">
-                      <svg
-                        className="h-7 w-7 text-cyan-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                        />
-                      </svg>
+                    <div
+                      className={`flex h-16 w-16 items-center justify-center rounded-full border ${
+                        isDragReject
+                          ? "border-red-400/40 bg-red-500/10"
+                          : "border-cyan-400/30 bg-cyan-500/10"
+                      }`}
+                    >
+                      {isDragReject ? (
+                        <XCircle className="h-7 w-7 text-red-300" />
+                      ) : (
+                        <UploadCloud className="h-7 w-7 text-cyan-300" />
+                      )}
                     </div>
                     {isDragActive && (
                       <motion.div
@@ -398,17 +465,24 @@ export function GenomicUploader({
 
                   <div className="text-center">
                     <p className="text-sm font-medium text-white/80">
-                      {isDragActive ? "Release to upload" : "Drag & drop your file here"}
+                      {isDragReject
+                        ? "This file cannot be uploaded"
+                        : isDragActive
+                        ? "Release to start upload"
+                        : "Drag & drop your genomic file here"}
                     </p>
-                    <p className="mt-1 text-xs text-white/40">or</p>
+                    <p className="mt-1 text-xs text-white/40">CSV and VCF files are validated before analysis.</p>
                     <button
                       type="button"
-                      className="mt-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-1.5 text-xs font-medium text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
                     >
+                      <FileText className="h-3.5 w-3.5" />
                       Browse files
                     </button>
                   </div>
                 </div>
+
+                <ValidationChecklist invalid={Boolean(state.errorMessage) || isDragReject} />
 
                 {/* Error message */}
                 <AnimatePresence>
@@ -419,19 +493,7 @@ export function GenomicUploader({
                       exit={{ opacity: 0 }}
                       className="mt-4 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3"
                     >
-                      <svg
-                        className="mt-0.5 h-4 w-4 shrink-0 text-red-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                        />
-                      </svg>
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
                       <p className="text-xs text-red-300">{state.errorMessage}</p>
                       <button
                         onClick={reset}
@@ -460,13 +522,11 @@ export function GenomicUploader({
                 {/* File badge */}
                 <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/15 border border-cyan-500/20">
-                    <svg className="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                    </svg>
+                    <FileText className="h-4 w-4 text-cyan-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-white/90">{state.fileName}</p>
-                    <p className="text-xs text-white/40">{state.fileSize}</p>
+                    <p className="text-xs text-white/40">{state.fileSize} · Uploading securely</p>
                   </div>
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -488,6 +548,10 @@ export function GenomicUploader({
                 className="flex flex-col items-center gap-6 py-4"
               >
                 <AnalysisPhase />
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2 text-xs text-emerald-200/80">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  File validated. Running genomic analysis.
+                </div>
                 <SequenceScanner progress={100} />
               </motion.div>
             )}
@@ -510,7 +574,7 @@ export function GenomicUploader({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </motion.div>
-                <p className="text-sm font-medium text-emerald-300">Analysis complete — redirecting to dashboard…</p>
+                <p className="text-sm font-medium text-emerald-300">Analysis complete — opening results…</p>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,4 +1,4 @@
-// Color Palette - GeneScope AI Design System
+// Color Palette - GScope AI Design System
 export const COLORS = {
   // Base Colors
   background: 'hsl(var(--background))',
@@ -42,6 +42,11 @@ export const COLORS = {
   // Glass Effects
   glassBg: 'hsl(var(--glass-bg))',
   glassBorder: 'hsl(var(--glass-border))',
+
+  // Legacy aliases used by older dashboard components
+  text: 'hsl(var(--foreground))',
+  cardBg: 'hsl(var(--card))',
+  lightBorder: 'hsl(var(--border))',
 };
 
 // Semantic Color Mappings

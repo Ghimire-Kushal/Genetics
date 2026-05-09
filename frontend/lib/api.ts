@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { AnalysisResult } from '@/types';
 
 // API Client Singleton
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/genomics';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -15,7 +15,11 @@ const apiClient: AxiosInstance = axios.create({
 // API Service Functions
 export const apiService = {
   // Upload genomic dataset
-  async uploadDataset(file: File): Promise<{ uploadId: string; fileName: string; fileSize: number }> {
+  async uploadDataset(file: File): Promise<{
+    upload_id: string;
+    analysis_id: string;
+    file: { original_name: string; stored_name: string; size_bytes: number; extension: string };
+  }> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -29,14 +33,19 @@ export const apiService = {
   },
 
   // Analyze uploaded dataset
-  async analyzeDataset(uploadId: string): Promise<{ analysisId: string; status: string }> {
-    const response = await apiClient.post('/analyze', { uploadId });
+  async analyzeDataset(analysisId: string): Promise<{ analysis_id: string; status: string }> {
+    const response = await apiClient.post('/analyze', {
+      analysis_id: analysisId,
+      upload_id: analysisId,
+    });
     return response.data;
   },
 
   // Get analysis results
   async getAnalysisResults(analysisId: string): Promise<AnalysisResult> {
-    const response = await apiClient.get(`/results/${analysisId}`);
+    const response = await apiClient.get('/results', {
+      params: { analysis_id: analysisId },
+    });
     return response.data;
   },
 
