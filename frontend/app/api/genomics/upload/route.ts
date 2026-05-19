@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(["csv", "vcf"]);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 const BACKEND_UPLOAD_URLS = [
   process.env.GSCOPE_BACKEND_UPLOAD_URL,
   process.env.GENESCOPE_BACKEND_UPLOAD_URL,
+  API_BASE_URL ? `${API_BASE_URL}/upload` : undefined,
   "http://127.0.0.1:8000/upload",
   "http://127.0.0.1:8001/upload",
 ].filter(Boolean) as string[];

@@ -85,7 +85,7 @@ npm install
 
 # Set up environment variables
 # Create a .env.local file in the frontend directory
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=https://genetics-jqlc.onrender.com
 ```
 
 ### Development
@@ -207,7 +207,7 @@ docker run -p 3000:3000 genescope-ai
 Create a `.env.local` file:
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=https://genetics-jqlc.onrender.com
 ```
 
 ## 🤝 Contributing

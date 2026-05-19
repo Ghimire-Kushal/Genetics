@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { AnalysisResult } from '@/types';
 
 // API Client Singleton
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/genomics';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://genetics-jqlc.onrender.com';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
