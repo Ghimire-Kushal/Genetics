@@ -7,6 +7,7 @@ const BACKEND_UPLOAD_URLS = [
   process.env.GSCOPE_BACKEND_UPLOAD_URL,
   process.env.GENESCOPE_BACKEND_UPLOAD_URL,
   API_BASE_URL ? `${API_BASE_URL}/upload` : undefined,
+  "https://genetics-jqlc.onrender.com/upload",
   "http://127.0.0.1:8000/upload",
   "http://127.0.0.1:8001/upload",
 ].filter(Boolean) as string[];

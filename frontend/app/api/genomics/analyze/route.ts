@@ -5,6 +5,7 @@ const BACKEND_ANALYZE_URLS = [
   process.env.GSCOPE_BACKEND_ANALYZE_URL,
   process.env.GENESCOPE_BACKEND_ANALYZE_URL,
   API_BASE_URL ? `${API_BASE_URL}/analyze` : undefined,
+  "https://genetics-jqlc.onrender.com/analyze",
   "http://127.0.0.1:8000/analyze",
   "http://127.0.0.1:8001/analyze",
 ].filter(Boolean) as string[];
