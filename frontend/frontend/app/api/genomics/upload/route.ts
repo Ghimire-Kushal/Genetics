@@ -6,7 +6,7 @@ const ALLOWED_MIMES = new Set([
   "text/x-vcard",
   "application/octet-stream",
 ]);
-
+//api
 const ALLOWED_EXTENSIONS = new Set(["csv", "vcf", "txt"]);
 const MAX_BYTES = 50 * 1024 * 1024;
 
