@@ -6,7 +6,7 @@ export const COLORS = {
   card: 'hsl(var(--card))',
   cardForeground: 'hsl(var(--card-foreground))',
 
-  // Primary Colors
+  // Primary Colors used for main actions and highlights
   primary: 'hsl(var(--primary))',
   primaryForeground: 'hsl(var(--primary-foreground))',
   primaryHover: 'hsl(var(--primary-hover))',
