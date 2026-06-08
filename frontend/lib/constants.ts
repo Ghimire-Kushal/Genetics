@@ -1,4 +1,5 @@
 // Color Palette - GScope AI Design System work 
+//constants.ts
 export const COLORS = {
   // Base Colors
   background: 'hsl(var(--background))',
