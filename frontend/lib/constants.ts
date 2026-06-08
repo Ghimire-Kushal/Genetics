@@ -1,7 +1,4 @@
-// Color Palette - GScope AI Design System work 
-//constants.ts
-//just commit s
-//backup file for constants
+
 export const COLORS = {
   // Base Colors
   background: 'hsl(var(--background))',
