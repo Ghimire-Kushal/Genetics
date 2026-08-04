@@ -41,7 +41,7 @@ export default function UploadPage() {
     <>
       <GridBackground />
       <main className="relative flex min-h-screen flex-col items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <div className="mb-10 flex items-center gap-2 font-mono text-xs text-white/30">
             <span className="text-cyan-500/60">GScope</span>
             <span>/</span>

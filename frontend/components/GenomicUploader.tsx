@@ -61,6 +61,14 @@ const VALIDATION_RULES = [
   "Single file upload",
 ];
 
+const TEST_CSV_CONTENT = `sample_id,gene,mutation,variant_type,confidence_score,clinical_note
+GS-001,BRCA1,c.68_69delAG,deletion,0.94,Review hereditary breast and ovarian cancer risk
+GS-002,TP53,p.R248Q,missense,0.88,High-impact tumor suppressor variant
+GS-003,EGFR,L858R,substitution,0.81,Consider targeted therapy context
+GS-004,KRAS,G12D,missense,0.76,Associated with MAPK pathway activation
+GS-005,APOE,rs429358,snp,0.63,Interpret alongside clinical history
+`;
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -350,7 +358,7 @@ export function GenomicUploader({
   );
 
   // ── Dropzone ─────────────────────────────────────────────────────────────
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open } = useDropzone({
     accept: ACCEPTED_TYPES,
     maxSize: MAX_SIZE_BYTES,
     multiple: false,
@@ -371,6 +379,13 @@ export function GenomicUploader({
 
   const reset = () =>
     setState({ stage: "idle", progress: 0, fileName: null, fileSize: null, errorMessage: null });
+
+  const uploadTestFile = () => {
+    const testFile = new File([TEST_CSV_CONTENT], "genomic-upload-test.csv", {
+      type: "text/csv",
+    });
+    void handleUpload(testFile);
+  };
 
   // ── Derived UI flags ─────────────────────────────────────────────────────
   const isIdle = state.stage === "idle" || state.stage === "error";
@@ -419,65 +434,84 @@ export function GenomicUploader({
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.3 }}
               >
-                <div
-                  {...getRootProps()}
-                  className={`relative flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed px-8 py-14 cursor-pointer transition-colors duration-200 ${borderColor} bg-black/20`}
-                >
-                  <input {...getInputProps()} />
-
-                  {/* Scan grid overlay */}
-                  <div
-                    className="pointer-events-none absolute inset-0 rounded-xl opacity-20"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(rgba(96,165,250,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(96,165,250,0.15) 1px, transparent 1px)",
-                      backgroundSize: "32px 32px",
-                    }}
-                  />
-
-                  {/* Upload icon */}
-                  <motion.div
-                    animate={isDragActive ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                    className="relative"
-                  >
-                    <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-full border ${
-                        isDragReject
-                          ? "border-red-400/40 bg-red-500/10"
-                          : "border-cyan-400/30 bg-cyan-500/10"
-                      }`}
-                    >
-                      {isDragReject ? (
-                        <XCircle className="h-7 w-7 text-red-300" />
-                      ) : (
-                        <UploadCloud className="h-7 w-7 text-cyan-300" />
-                      )}
-                    </div>
-                    {isDragActive && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full border border-cyan-400/60"
-                        animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                        transition={{ duration: 0.8, repeat: Infinity }}
-                      />
-                    )}
-                  </motion.div>
-
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-white/80">
-                      {isDragReject
-                        ? "This file cannot be uploaded"
-                        : isDragActive
-                        ? "Release to start upload"
-                        : "Drag & drop your genomic file here"}
-                    </p>
-                    <p className="mt-1 text-xs text-white/40">CSV and VCF files are validated before analysis.</p>
+                <div className="grid gap-4 lg:grid-cols-[9rem_minmax(0,1fr)_9rem]">
+                  <div className="order-2 flex rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3 lg:order-1">
                     <button
                       type="button"
-                      className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
+                      onClick={uploadTestFile}
+                      disabled={!isIdle}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-3 text-xs font-semibold text-cyan-200 transition hover:border-cyan-300 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 lg:flex-col lg:gap-3"
                     >
-                      <FileText className="h-3.5 w-3.5" />
-                      Browse files
+                      <FileText className="h-5 w-5" />
+                      <span>Upload test CSV</span>
+                    </button>
+                  </div>
+
+                  <div
+                    {...getRootProps()}
+                    className={`order-1 relative flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed px-8 py-14 cursor-pointer transition-colors duration-200 ${borderColor} bg-black/20 lg:order-2`}
+                  >
+                    <input {...getInputProps()} />
+
+                    {/* Scan grid overlay */}
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-xl opacity-20"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(rgba(96,165,250,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(96,165,250,0.15) 1px, transparent 1px)",
+                        backgroundSize: "32px 32px",
+                      }}
+                    />
+
+                    {/* Upload icon */}
+                    <motion.div
+                      animate={isDragActive ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      className="relative"
+                    >
+                      <div
+                        className={`flex h-16 w-16 items-center justify-center rounded-full border ${
+                          isDragReject
+                            ? "border-red-400/40 bg-red-500/10"
+                            : "border-cyan-400/30 bg-cyan-500/10"
+                        }`}
+                      >
+                        {isDragReject ? (
+                          <XCircle className="h-7 w-7 text-red-300" />
+                        ) : (
+                          <UploadCloud className="h-7 w-7 text-cyan-300" />
+                        )}
+                      </div>
+                      {isDragActive && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full border border-cyan-400/60"
+                          animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
+                          transition={{ duration: 0.8, repeat: Infinity }}
+                        />
+                      )}
+                    </motion.div>
+
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-white/80">
+                        {isDragReject
+                          ? "This file cannot be uploaded"
+                          : isDragActive
+                          ? "Release to start upload"
+                          : "Drag & drop your genomic file here"}
+                      </p>
+                      <p className="mt-1 text-xs text-white/40">CSV and VCF files are validated before analysis.</p>
+                    </div>
+                  </div>
+
+                  <div className="order-3 flex rounded-xl border border-violet-400/20 bg-violet-500/[0.06] p-3">
+                    <button
+                      type="button"
+                      onClick={open}
+                      disabled={!isIdle}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-400/40 bg-violet-500/10 px-3 py-3 text-xs font-semibold text-violet-100 transition hover:border-violet-300 hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50 lg:flex-col lg:gap-3"
+                    >
+                      <UploadCloud className="h-5 w-5" />
+                      <span>Browse files</span>
                     </button>
                   </div>
                 </div>

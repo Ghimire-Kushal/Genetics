@@ -1,0 +1,6 @@
+sample_id,gene,mutation,variant_type,confidence_score,clinical_note
+GS-001,BRCA1,c.68_69delAG,deletion,0.94,Review hereditary breast and ovarian cancer risk
+GS-002,TP53,p.R248Q,missense,0.88,High-impact tumor suppressor variant
+GS-003,EGFR,L858R,substitution,0.81,Consider targeted therapy context
+GS-004,KRAS,G12D,missense,0.76,Associated with MAPK pathway activation
+GS-005,APOE,rs429358,snp,0.63,Interpret alongside clinical history
